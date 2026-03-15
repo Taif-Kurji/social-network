@@ -1,4 +1,4 @@
-const apiBase = (document.body.dataset.apiBase || '').replace(/\/+$/, '');
+const apiBase = resolveApiBase();
 const usesApi = Boolean(apiBase);
 
 const els = {
@@ -48,6 +48,20 @@ function init() {
   } else {
     showMessage('Backend är inte konfigurerad. Kontrollera data-api-base.', 'danger');
   }
+}
+
+function resolveApiBase() {
+  const fromQuery = new URLSearchParams(window.location.search).get('apiBase') || '';
+  const fromDataset = document.body.dataset.apiBase || '';
+  const fromStorage = localStorage.getItem('apiBase') || '';
+  const fallback = `${window.location.protocol}//${window.location.hostname}:4000`;
+
+  const chosen = (fromQuery || fromDataset || fromStorage || fallback).trim();
+  if (fromQuery) {
+    localStorage.setItem('apiBase', chosen);
+  }
+
+  return chosen.replace(/\/+$/, '');
 }
 
 function bindEvents() {
@@ -375,16 +389,21 @@ async function apiFetch(path, options = {}) {
   if (!usesApi) {
     throw new Error('API-bas saknas.');
   }
-  const response = await fetch(`${apiBase}${path}`, {
-    method: options.method || 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      ...(options.headers || {}),
-    },
-    credentials: 'include',
-    body: options.body,
-  });
+  let response;
+  try {
+    response = await fetch(`${apiBase}${path}`, {
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(options.headers || {}),
+      },
+      credentials: 'include',
+      body: options.body,
+    });
+  } catch (error) {
+    throw new Error(`Kunde inte nå backend på ${apiBase}. Kontrollera att servern är igång och att CLIENT_ORIGIN/CORS är rätt inställt.`);
+  }
 
   if (response.status === 204) {
     return {};

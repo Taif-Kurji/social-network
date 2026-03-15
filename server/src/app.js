@@ -8,10 +8,24 @@ import postsRouter from './routes/posts.js';
 import { HttpError } from './errors/http-error.js';
 import { authenticate } from './middleware/auth.js';
 
-const allowedOrigins = new Set([
-  env.clientOrigin,
-  env.clientOrigin.replace('localhost', '127.0.0.1'),
-]);
+function toAlternateLocalhostOrigin(origin) {
+  if (origin.includes('localhost')) {
+    return origin.replace('localhost', '127.0.0.1');
+  }
+  if (origin.includes('127.0.0.1')) {
+    return origin.replace('127.0.0.1', 'localhost');
+  }
+  return null;
+}
+
+const allowedOrigins = new Set();
+for (const origin of env.clientOrigins) {
+  allowedOrigins.add(origin);
+  const alternateOrigin = toAlternateLocalhostOrigin(origin);
+  if (alternateOrigin) {
+    allowedOrigins.add(alternateOrigin);
+  }
+}
 
 export const app = express();
 

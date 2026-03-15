@@ -2,6 +2,13 @@ import 'dotenv/config';
 
 const requiredEnv = ['JWT_SECRET'];
 
+function parseClientOrigins(value) {
+  return value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
 export function loadEnv() {
   const {
     NODE_ENV = 'development',
@@ -21,7 +28,7 @@ export function loadEnv() {
     port: Number(PORT),
     mongoUri: MONGODB_URI,
     jwtSecret: JWT_SECRET,
-    clientOrigin: CLIENT_ORIGIN
+    clientOrigins: parseClientOrigins(CLIENT_ORIGIN)
   };
 }
 
